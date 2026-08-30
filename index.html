@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Minecraft Custom Totem Generator</title>
-  <!-- JSZip & FileSaver for client-side .zip generation -->
+  <title>Minecraft Skin Totem Generator</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
@@ -14,7 +13,6 @@
       --panel-border: #1e2638;
       --accent-cyan: #00e5ff;
       --accent-green: #00ff88;
-      --accent-purple: #9d4edd;
       --text-main: #f0f4f8;
       --text-muted: #7e8b9b;
       --input-bg: #0b0e14;
@@ -31,7 +29,7 @@
       background-color: var(--bg-dark);
       background-image: 
         radial-gradient(circle at 15% 15%, rgba(0, 229, 255, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(157, 78, 221, 0.08) 0%, transparent 40%);
+        radial-gradient(circle at 85% 85%, rgba(0, 255, 136, 0.08) 0%, transparent 40%);
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
@@ -76,7 +74,6 @@
       border-radius: 12px;
       padding: 24px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      position: relative;
     }
 
     .card-title {
@@ -86,9 +83,6 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
 
     .tabs {
@@ -166,7 +160,6 @@
       display: none;
     }
 
-    /* Preview Section */
     .preview-panel {
       display: flex;
       flex-direction: column;
@@ -218,13 +211,6 @@
       box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
     }
 
-    .btn-download:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-
     .status-msg {
       margin-top: 12px;
       font-size: 0.85rem;
@@ -245,12 +231,11 @@
 <body>
 
   <header>
-    <h1>Minecraft Skin Totem Generator</h1>
-    <p>Convert your Minecraft skin into a custom Totem of Undying resource pack.</p>
+    <h1>Minecraft Pure Skin Totem Generator</h1>
+    <p>Convert your exact character skin into a 100% pure mini-skin Totem of Undying.</p>
   </header>
 
   <div class="container">
-    <!-- Configuration Card -->
     <div class="card">
       <div class="card-title">1. Choose Skin & Version</div>
 
@@ -259,7 +244,6 @@
         <button class="tab-btn" id="tab-upload" onclick="switchTab('upload')">Upload PNG</button>
       </div>
 
-      <!-- Username Input -->
       <div id="section-username">
         <div class="form-group">
           <label>Minecraft Username</label>
@@ -270,7 +254,6 @@
         </button>
       </div>
 
-      <!-- Upload Input -->
       <div id="section-upload" style="display: none;">
         <div class="form-group">
           <label>Skin PNG File (64x64 or 64x32)</label>
@@ -281,7 +264,6 @@
         </div>
       </div>
 
-      <!-- Version Selector -->
       <div class="form-group">
         <label>Minecraft Game Version</label>
         <select id="version-select">
@@ -300,9 +282,8 @@
       </div>
     </div>
 
-    <!-- Live Preview & Export Card -->
     <div class="card preview-panel">
-      <div class="card-title">2. Totem Live Preview</div>
+      <div class="card-title">2. Skin Totem Preview</div>
       
       <div class="preview-wrapper">
         <canvas id="totemCanvas" width="16" height="16"></canvas>
@@ -322,7 +303,6 @@
     const ctx = canvas.getContext("2d");
     let currentSkinImg = null;
 
-    // Initialize with a default mini-totem sprite
     window.onload = () => {
       document.getElementById("username-input").value = "Steve";
       fetchSkinByUsername();
@@ -341,7 +321,6 @@
       el.className = `status-msg ${type}`;
     }
 
-    // Load skin from username via Minotar / Ashcon
     function fetchSkinByUsername() {
       const username = document.getElementById("username-input").value.trim();
       if (!username) {
@@ -352,8 +331,6 @@
       setStatus(`Fetching skin for ${username}...`, "success");
       const img = new Image();
       img.crossOrigin = "Anonymous";
-      
-      // Minotar direct CORS skin endpoint
       img.src = `https://minotar.net/skin/${encodeURIComponent(username)}`;
 
       img.onload = () => {
@@ -363,13 +340,11 @@
       };
 
       img.onerror = () => {
-        // Fallback endpoint
         img.src = `https://mineskin.eu/skin/${encodeURIComponent(username)}`;
         img.onerror = () => setStatus("Failed to load skin. Verify the username or upload a PNG.", "error");
       };
     }
 
-    // Load skin from file upload
     function handleFileUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -388,83 +363,86 @@
       reader.readAsDataURL(file);
     }
 
-    // Composite 64x64 player skin into an authentic 16x16 Totem of Undying sprite
+    // Pure Skin Renderer (No gold wings, perfectly filling 16x16 canvas)
     function drawTotemFromSkin(skin) {
       ctx.clearRect(0, 0, 16, 16);
       ctx.imageSmoothingEnabled = false;
 
-      // Temporary canvas to process skin pixels
       const skinCanvas = document.createElement("canvas");
       skinCanvas.width = skin.width;
       skinCanvas.height = skin.height;
       const sCtx = skinCanvas.getContext("2d");
       sCtx.drawImage(skin, 0, 0);
 
-      // Helper function to draw skin regions
-      function drawSkinPart(sx, sy, sw, sh, dx, dy, dw, dh) {
+      const is64x64 = skin.height >= 64;
+
+      function drawPart(sx, sy, sw, sh, dx, dy, dw, dh) {
         ctx.drawImage(skinCanvas, sx, sy, sw, sh, dx, dy, dw, dh);
       }
 
-      // 1. Totem Golden Wings / Base Trim
-      ctx.fillStyle = "#f5b82e";
-      ctx.fillRect(1, 6, 2, 4);   // Left wing
-      ctx.fillRect(13, 6, 2, 4);  // Right wing
-      ctx.fillStyle = "#9c6b12";
-      ctx.fillRect(1, 10, 2, 1);
-      ctx.fillRect(13, 10, 2, 1);
+      // 1. Torso Base (sx: 20, sy: 20, 8x12) -> drawn at x=6, y=8, w=4, h=5
+      drawPart(20, 20, 8, 12, 6, 8, 4, 5);
 
-      // 2. Body / Torso (front layer at sx: 20, sy: 20, 8x12 -> drawn to 6x5 at 5, 8)
-      drawSkinPart(20, 20, 8, 12, 5, 8, 6, 5);
+      // 2. Right Arm Base (sx: 44, sy: 20, 4x12) -> drawn at x=4, y=8, w=2, h=5
+      drawPart(44, 20, 4, 12, 4, 8, 2, 5);
 
-      // 3. Jacket / Torso Overlay (sx: 20, sy: 36, 8x12)
-      drawSkinPart(20, 36, 8, 12, 5, 8, 6, 5);
+      // 3. Left Arm Base -> drawn at x=10, y=8, w=2, h=5
+      if (is64x64) {
+        drawPart(36, 52, 4, 12, 10, 8, 2, 5);
+      } else {
+        drawPart(44, 20, 4, 12, 10, 8, 2, 5);
+      }
 
-      // 4. Arms (left sx: 44, sy: 20; right sx: 36, sy: 52 or 44, 20)
-      drawSkinPart(44, 20, 4, 12, 3, 8, 2, 5);  // Right arm
-      drawSkinPart(44, 20, 4, 12, 11, 8, 2, 5); // Left arm
+      // 4. Right Leg Base (sx: 4, sy: 20, 4x12) -> drawn at x=6, y=13, w=2, h=3
+      drawPart(4, 20, 4, 12, 6, 13, 2, 3);
 
-      // 5. Legs (sx: 4, sy: 20)
-      drawSkinPart(4, 20, 4, 12, 5, 13, 3, 3);
-      drawSkinPart(4, 20, 4, 12, 8, 13, 3, 3);
+      // 5. Left Leg Base -> drawn at x=8, y=13, w=2, h=3
+      if (is64x64) {
+        drawPart(20, 52, 4, 12, 8, 13, 2, 3);
+      } else {
+        drawPart(4, 20, 4, 12, 8, 13, 2, 3);
+      }
 
-      // 6. Head Base Layer (sx: 8, sy: 8, 8x8 -> drawn to 8x8 at 4, 0)
-      drawSkinPart(8, 8, 8, 8, 4, 0, 8, 8);
+      // 6. Overlays (Jacket, Sleeves, Pants) if 64x64 skin
+      if (is64x64) {
+        drawPart(20, 36, 8, 12, 6, 8, 4, 5);  // Jacket overlay
+        drawPart(44, 36, 4, 12, 4, 8, 2, 5);  // Right sleeve overlay
+        drawPart(52, 52, 4, 12, 10, 8, 2, 5); // Left sleeve overlay
+        drawPart(4, 36, 4, 12, 6, 13, 2, 3);  // Right pants overlay
+        drawPart(4, 52, 4, 12, 8, 13, 2, 3);  // Left pants overlay
+      }
 
-      // 7. Hat / Head Outer Layer (sx: 40, sy: 8, 8x8)
-      drawSkinPart(40, 8, 8, 8, 4, 0, 8, 8);
+      // 7. Head Base Layer (sx: 8, sy: 8, 8x8) -> drawn at x=4, y=0, w=8, h=8
+      drawPart(8, 8, 8, 8, 4, 0, 8, 8);
+
+      // 8. Hat / Helmet Layer (sx: 40, sy: 8, 8x8) -> drawn at x=4, y=0, w=8, h=8
+      drawPart(40, 8, 8, 8, 4, 0, 8, 8);
     }
 
-    // Generate and download full .ZIP Resource Pack
     async function generateResourcePack() {
       if (!currentSkinImg) {
         setStatus("Please load a skin first.", "error");
         return;
       }
 
-      setStatus("Generating resource pack...", "success");
+      setStatus("Generating pure skin resource pack...", "success");
       const zip = new JSZip();
       const packFormat = parseInt(document.getElementById("version-select").value);
 
-      // 1. pack.mcmeta
       const packMcmeta = {
         pack: {
           pack_format: packFormat,
-          description: "Custom Skin Totem of Undying"
+          description: "Custom Pure Skin Totem of Undying"
         }
       };
       zip.file("pack.mcmeta", JSON.stringify(packMcmeta, null, 2));
 
-      // 2. Export 16x16 totem canvas as binary PNG
       const totemBlob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
       const totemArrayBuffer = await totemBlob.arrayBuffer();
 
-      // Assets location for Totem texture
       zip.file("assets/minecraft/textures/item/totem_of_undying.png", totemArrayBuffer);
-
-      // 3. Generate pack.png icon for resource pack menu
       zip.file("pack.png", totemArrayBuffer);
 
-      // 4. Build and download the zip file
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, "CustomSkinTotem_Pack.zip");
       setStatus("Resource pack downloaded! Move it into .minecraft/resourcepacks", "success");
