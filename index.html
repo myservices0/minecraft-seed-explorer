@@ -3,545 +3,472 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Minecraft Seed, Structure & Diamond Finder</title>
+  <title>Minecraft Custom Totem Generator</title>
+  <!-- JSZip & FileSaver for client-side .zip generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     :root {
-      --bg: #0d0f17;
-      --card: #161a26;
-      --border: #262c3e;
-      --accent-diamond: #2ee6d6;
-      --accent-village: #4ade80;
-      --accent-portal: #c084fc;
-      --text: #f3f4f6;
-      --text-dim: #9ca3af;
-      --highlight: #f59e0b;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 1.5rem; display: flex; justify-content: center; }
-    .container { max-width: 1100px; width: 100%; display: flex; flex-direction: column; gap: 1.25rem; }
-
-    .header { text-align: center; }
-    .header h1 { font-size: 2rem; color: #fff; margin-bottom: 0.25rem; }
-    .header p { color: var(--text-dim); font-size: 0.9rem; }
-
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
-    
-    .input-bar {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr auto;
-      gap: 0.75rem;
-      align-items: flex-end;
-    }
-    .input-group label { display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.35rem; font-weight: 600; }
-    .input-group input, .input-group select {
-      width: 100%;
-      background: #0f121c;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.65rem 0.8rem;
-      color: #fff;
-      font-size: 0.95rem;
-    }
-    .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--accent-diamond); }
-
-    .btn-gen {
-      background: #2563eb;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 0.65rem 1.5rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
-      height: 42px;
-    }
-    .btn-gen:hover { background: #1d4ed8; }
-
-    /* Tabs */
-    .tab-bar { display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
-    .tab-btn {
-      background: transparent;
-      border: 1px solid transparent;
-      color: var(--text-dim);
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
-    .tab-btn.active { background: #262c3e; color: #fff; border-color: var(--border); }
-    .tab-btn:hover:not(.active) { color: #fff; background: rgba(255,255,255,0.03); }
-
-    /* Map & View Area */
-    .view-container { display: grid; grid-template-columns: 1fr 340px; gap: 1.25rem; }
-    @media (max-width: 850px) { .view-container { grid-template-columns: 1fr; } .input-bar { grid-template-columns: 1fr; } }
-
-    .canvas-wrapper { position: relative; width: 100%; background: #0b0d14; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; height: 480px; }
-    canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
-
-    .map-controls {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      display: flex;
-      gap: 6px;
-      background: rgba(15,18,28,0.85);
-      border: 1px solid var(--border);
-      padding: 4px;
-      border-radius: 6px;
-    }
-    .map-controls button {
-      background: #222738;
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 4px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
+      --bg-dark: #090b10;
+      --panel-bg: #121620;
+      --panel-border: #1e2638;
+      --accent-cyan: #00e5ff;
+      --accent-green: #00ff88;
+      --accent-purple: #9d4edd;
+      --text-main: #f0f4f8;
+      --text-muted: #7e8b9b;
+      --input-bg: #0b0e14;
     }
 
-    .sidebar { display: flex; flex-direction: column; gap: 1rem; height: 480px; }
-    .filter-panel { background: #0f121c; border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem; }
-    .filter-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 0.5rem;
-      font-size: 0.85rem;
-      cursor: pointer;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
     }
-    .filter-item input { margin-right: 0.5rem; cursor: pointer; }
-    .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
 
-    .list-panel {
-      flex: 1;
-      background: #0f121c;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.75rem;
-      overflow-y: auto;
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(0, 229, 255, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(157, 78, 221, 0.08) 0%, transparent 40%);
+      color: var(--text-main);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-    }
-    .coord-item {
-      background: #161a26;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.6rem;
-      font-size: 0.85rem;
-      display: flex;
-      justify-content: space-between;
       align-items: center;
+      padding: 30px 15px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 950px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    header p {
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tabs {
+      display: flex;
+      background: var(--input-bg);
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 20px;
+      border: 1px solid var(--panel-border);
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--accent-cyan);
+      color: #000;
+      box-shadow: 0 2px 10px rgba(0, 229, 255, 0.3);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      outline: none;
       transition: border-color 0.2s;
     }
-    .coord-item:hover { border-color: var(--accent-diamond); }
-    .coord-details { display: flex; flex-direction: column; gap: 2px; }
-    .coord-title { font-weight: 600; }
-    .coord-sub { color: var(--text-dim); font-size: 0.75rem; font-family: monospace; }
-    .btn-tp {
-      background: #2563eb;
-      border: none;
-      color: #fff;
-      padding: 4px 8px;
-      border-radius: 4px;
+
+    input[type="text"]:focus, select:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .file-dropzone {
+      border: 2px dashed var(--panel-border);
+      border-radius: 8px;
+      padding: 25px;
+      text-align: center;
+      background: var(--input-bg);
       cursor: pointer;
-      font-size: 0.75rem;
+      transition: all 0.2s;
+    }
+
+    .file-dropzone:hover {
+      border-color: var(--accent-cyan);
+      background: rgba(0, 229, 255, 0.03);
+    }
+
+    .file-dropzone input {
+      display: none;
+    }
+
+    /* Preview Section */
+    .preview-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-wrapper {
+      width: 192px;
+      height: 192px;
+      background: repeating-conic-gradient(#151922 0% 25%, #0b0e14 0% 50%) 50% / 16px 16px;
+      border: 2px solid var(--panel-border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+    }
+
+    canvas {
+      image-rendering: pixelated;
+      width: 160px;
+      height: 160px;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+    }
+
+    .btn-download {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
+    }
+
+    .btn-download:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .status-msg {
+      margin-top: 12px;
+      font-size: 0.85rem;
+      text-align: center;
+      min-height: 20px;
+    }
+
+    .status-msg.error { color: #ff5555; }
+    .status-msg.success { color: var(--accent-green); }
+
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
+
+  <header>
+    <h1>Minecraft Skin Totem Generator</h1>
+    <p>Convert your Minecraft skin into a custom Totem of Undying resource pack.</p>
+  </header>
+
   <div class="container">
-    <div class="header">
-      <h1>Minecraft Seed & Diamond Explorer</h1>
-      <p>Locate villages, End Portals / Strongholds, and highlight diamond veins</p>
+    <!-- Configuration Card -->
+    <div class="card">
+      <div class="card-title">1. Choose Skin & Version</div>
+
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-username" onclick="switchTab('username')">Username</button>
+        <button class="tab-btn" id="tab-upload" onclick="switchTab('upload')">Upload PNG</button>
+      </div>
+
+      <!-- Username Input -->
+      <div id="section-username">
+        <div class="form-group">
+          <label>Minecraft Username</label>
+          <input type="text" id="username-input" placeholder="e.g. Notch, Jordan..." />
+        </div>
+        <button class="btn-download" style="background: var(--input-bg); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); margin-bottom: 16px;" onclick="fetchSkinByUsername()">
+          Load Skin
+        </button>
+      </div>
+
+      <!-- Upload Input -->
+      <div id="section-upload" style="display: none;">
+        <div class="form-group">
+          <label>Skin PNG File (64x64 or 64x32)</label>
+          <div class="file-dropzone" onclick="document.getElementById('file-input').click()">
+            <span id="file-label">Click or drop a skin .PNG file here</span>
+            <input type="file" id="file-input" accept="image/png" onchange="handleFileUpload(event)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Version Selector -->
+      <div class="form-group">
+        <label>Minecraft Game Version</label>
+        <select id="version-select">
+          <option value="46">1.21.4 / 26.1.2+ (Pack Format 46)</option>
+          <option value="42">1.21.2 - 1.21.3 (Pack Format 42)</option>
+          <option value="34">1.21.0 - 1.21.1 (Pack Format 34)</option>
+          <option value="32">1.20.5 - 1.20.6 (Pack Format 32)</option>
+          <option value="22">1.20.3 - 1.20.4 (Pack Format 22)</option>
+          <option value="15">1.20.0 - 1.20.2 (Pack Format 15)</option>
+          <option value="13">1.19.4 (Pack Format 13)</option>
+          <option value="9">1.19.0 - 1.19.3 (Pack Format 9)</option>
+          <option value="8">1.18.x (Pack Format 8)</option>
+          <option value="7">1.17.x (Pack Format 7)</option>
+          <option value="6">1.16.2 - 1.16.5 (Pack Format 6)</option>
+        </select>
+      </div>
     </div>
 
-    <!-- Seed Input Bar -->
-    <div class="card">
-      <div class="input-bar">
-        <div class="input-group">
-          <label for="seedInput">World Seed (Number or Text)</label>
-          <input type="text" id="seedInput" placeholder="e.g. 123456789 or my_world_seed" value="8675309" />
-        </div>
-        <div class="input-group">
-          <label for="centerPos">Center (X, Z)</label>
-          <input type="text" id="centerPos" value="0, 0" />
-        </div>
-        <div class="input-group">
-          <label for="radiusSelect">Scan Radius</label>
-          <select id="radiusSelect">
-            <option value="1000">±1,000 Blocks</option>
-            <option value="2500" selected>±2,500 Blocks</option>
-            <option value="5000">±5,000 Blocks</option>
-          </select>
-        </div>
-        <button class="btn-gen" onclick="generateAll()">Generate</button>
-      </div>
-    </div>
-
-    <!-- Main Navigation Tabs -->
-    <div class="card">
-      <div class="tab-bar">
-        <button class="tab-btn active" id="tabStructures" onclick="switchTab('structures')">🏰 Structures & Portals</button>
-        <button class="tab-btn" id="tabBlocks" onclick="switchTab('blocks')">💎 Blocks & Diamonds</button>
+    <!-- Live Preview & Export Card -->
+    <div class="card preview-panel">
+      <div class="card-title">2. Totem Live Preview</div>
+      
+      <div class="preview-wrapper">
+        <canvas id="totemCanvas" width="16" height="16"></canvas>
       </div>
 
-      <div class="view-container" style="margin-top: 1rem;">
-        <!-- Canvas Map -->
-        <div class="canvas-wrapper">
-          <canvas id="mapCanvas"></canvas>
-          <div class="map-controls">
-            <button onclick="zoomMap(1.2)">+</button>
-            <button onclick="zoomMap(0.8)">-</button>
-            <button onclick="resetMapView()">Reset</button>
-          </div>
-        </div>
+      <button id="btn-export" class="btn-download" onclick="generateResourcePack()">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        Download Resource Pack (.ZIP)
+      </button>
 
-        <!-- Sidebar / Details -->
-        <div class="sidebar">
-          <div class="filter-panel" id="filterPanel">
-            <!-- Dynamic Filters inserted by Tab -->
-          </div>
-          <div class="list-panel" id="coordList">
-            <!-- Dynamic Coordinate Items -->
-          </div>
-        </div>
-      </div>
+      <div id="status" class="status-msg"></div>
     </div>
   </div>
 
   <script>
-    // State
-    let currentTab = 'structures';
-    let currentSeed = 8675309;
-    let scanRadius = 2500;
-    let centerX = 0, centerZ = 0;
-    let mapScale = 0.08;
-    let panX = 0, panZ = 0;
+    const canvas = document.getElementById("totemCanvas");
+    const ctx = canvas.getContext("2d");
+    let currentSkinImg = null;
 
-    // Data Storage
-    let villages = [];
-    let strongholds = [];
-    let diamonds = [];
+    // Initialize with a default mini-totem sprite
+    window.onload = () => {
+      document.getElementById("username-input").value = "Steve";
+      fetchSkinByUsername();
+    };
 
-    // Filter toggles
-    let showVillages = true;
-    let showStrongholds = true;
-    let showDiamonds = true;
-    let highlightAllDiamonds = false;
-
-    const canvas = document.getElementById('mapCanvas');
-    const ctx = canvas.getContext('2d');
-
-    // PRNG Hash Helpers
-    function hashSeed(seedStr) {
-      if (!isNaN(seedStr) && seedStr.trim() !== "") {
-        return BigInt(seedStr.trim());
-      }
-      let h = 0n;
-      for (let i = 0; i < seedStr.length; i++) {
-        h = BigInt((Math.imul(31, Number(h)) + seedStr.charCodeAt(i)) | 0);
-      }
-      return h;
+    function switchTab(mode) {
+      document.getElementById("tab-username").classList.toggle("active", mode === "username");
+      document.getElementById("tab-upload").classList.toggle("active", mode === "upload");
+      document.getElementById("section-username").style.display = mode === "username" ? "block" : "none";
+      document.getElementById("section-upload").style.display = mode === "upload" ? "block" : "none";
     }
 
-    function createPRNG(seed) {
-      let s = BigInt(seed);
-      return function() {
-        s = (s * 0x5DEECE66Dn + 0xBn) & ((1n << 48n) - 1n);
-        return Number(s >> 16n) / 4294967296;
+    function setStatus(msg, type = "success") {
+      const el = document.getElementById("status");
+      el.textContent = msg;
+      el.className = `status-msg ${type}`;
+    }
+
+    // Load skin from username via Minotar / Ashcon
+    function fetchSkinByUsername() {
+      const username = document.getElementById("username-input").value.trim();
+      if (!username) {
+        setStatus("Please enter a username.", "error");
+        return;
+      }
+
+      setStatus(`Fetching skin for ${username}...`, "success");
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      
+      // Minotar direct CORS skin endpoint
+      img.src = `https://minotar.net/skin/${encodeURIComponent(username)}`;
+
+      img.onload = () => {
+        currentSkinImg = img;
+        drawTotemFromSkin(img);
+        setStatus(`Skin loaded for ${username}!`, "success");
+      };
+
+      img.onerror = () => {
+        // Fallback endpoint
+        img.src = `https://mineskin.eu/skin/${encodeURIComponent(username)}`;
+        img.onerror = () => setStatus("Failed to load skin. Verify the username or upload a PNG.", "error");
       };
     }
 
-    function generateAll() {
-      const seedRaw = document.getElementById('seedInput').value || "0";
-      currentSeed = hashSeed(seedRaw);
-      const coords = document.getElementById('centerPos').value.split(',');
-      centerX = parseInt(coords[0]) || 0;
-      centerZ = parseInt(coords[1]) || 0;
-      scanRadius = parseInt(document.getElementById('radiusSelect').value) || 2500;
+    // Load skin from file upload
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
 
-      panX = 0;
-      panZ = 0;
-      mapScale = 400 / (scanRadius * 2);
-
-      generateStructures();
-      generateDiamonds();
-      updateUI();
-      drawMap();
+      document.getElementById("file-label").textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          currentSkinImg = img;
+          drawTotemFromSkin(img);
+          setStatus("Custom skin PNG loaded successfully!", "success");
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
     }
 
-    // Structure Placement Algorithm
-    function generateStructures() {
-      villages = [];
-      strongholds = [];
+    // Composite 64x64 player skin into an authentic 16x16 Totem of Undying sprite
+    function drawTotemFromSkin(skin) {
+      ctx.clearRect(0, 0, 16, 16);
+      ctx.imageSmoothingEnabled = false;
 
-      // 1. Villages (Grid Region Check)
-      const regionSize = 32 * 16; // 512 blocks per region
-      const minRegionX = Math.floor((centerX - scanRadius) / regionSize);
-      const maxRegionX = Math.floor((centerX + scanRadius) / regionSize);
-      const minRegionZ = Math.floor((centerZ - scanRadius) / regionSize);
-      const maxRegionZ = Math.floor((centerZ + scanRadius) / regionSize);
+      // Temporary canvas to process skin pixels
+      const skinCanvas = document.createElement("canvas");
+      skinCanvas.width = skin.width;
+      skinCanvas.height = skin.height;
+      const sCtx = skinCanvas.getContext("2d");
+      sCtx.drawImage(skin, 0, 0);
 
-      for (let rx = minRegionX; rx <= maxRegionX; rx++) {
-        for (let rz = minRegionZ; rz <= maxRegionZ; rz++) {
-          const regionSeed = BigInt(rx * 341873128712 + rz * 132897987541) + currentSeed + 10387312n;
-          const rng = createPRNG(regionSeed);
-          if (rng() < 0.65) {
-            const chunkX = (rx * 32) + Math.floor(rng() * 24);
-            const chunkZ = (rz * 32) + Math.floor(rng() * 24);
-            const vx = chunkX * 16 + 8;
-            const vz = chunkZ * 16 + 8;
-            const types = ['Plains Village', 'Desert Village', 'Taiga Village', 'Savanna Village'];
-            const type = types[Math.floor(rng() * types.length)];
-            villages.push({ type, x: vx, z: vz, y: 64 + Math.floor(rng() * 12) });
-          }
+      // Helper function to draw skin regions
+      function drawSkinPart(sx, sy, sw, sh, dx, dy, dw, dh) {
+        ctx.drawImage(skinCanvas, sx, sy, sw, sh, dx, dy, dw, dh);
+      }
+
+      // 1. Totem Golden Wings / Base Trim
+      ctx.fillStyle = "#f5b82e";
+      ctx.fillRect(1, 6, 2, 4);   // Left wing
+      ctx.fillRect(13, 6, 2, 4);  // Right wing
+      ctx.fillStyle = "#9c6b12";
+      ctx.fillRect(1, 10, 2, 1);
+      ctx.fillRect(13, 10, 2, 1);
+
+      // 2. Body / Torso (front layer at sx: 20, sy: 20, 8x12 -> drawn to 6x5 at 5, 8)
+      drawSkinPart(20, 20, 8, 12, 5, 8, 6, 5);
+
+      // 3. Jacket / Torso Overlay (sx: 20, sy: 36, 8x12)
+      drawSkinPart(20, 36, 8, 12, 5, 8, 6, 5);
+
+      // 4. Arms (left sx: 44, sy: 20; right sx: 36, sy: 52 or 44, 20)
+      drawSkinPart(44, 20, 4, 12, 3, 8, 2, 5);  // Right arm
+      drawSkinPart(44, 20, 4, 12, 11, 8, 2, 5); // Left arm
+
+      // 5. Legs (sx: 4, sy: 20)
+      drawSkinPart(4, 20, 4, 12, 5, 13, 3, 3);
+      drawSkinPart(4, 20, 4, 12, 8, 13, 3, 3);
+
+      // 6. Head Base Layer (sx: 8, sy: 8, 8x8 -> drawn to 8x8 at 4, 0)
+      drawSkinPart(8, 8, 8, 8, 4, 0, 8, 8);
+
+      // 7. Hat / Head Outer Layer (sx: 40, sy: 8, 8x8)
+      drawSkinPart(40, 8, 8, 8, 4, 0, 8, 8);
+    }
+
+    // Generate and download full .ZIP Resource Pack
+    async function generateResourcePack() {
+      if (!currentSkinImg) {
+        setStatus("Please load a skin first.", "error");
+        return;
+      }
+
+      setStatus("Generating resource pack...", "success");
+      const zip = new JSZip();
+      const packFormat = parseInt(document.getElementById("version-select").value);
+
+      // 1. pack.mcmeta
+      const packMcmeta = {
+        pack: {
+          pack_format: packFormat,
+          description: "Custom Skin Totem of Undying"
         }
-      }
+      };
+      zip.file("pack.mcmeta", JSON.stringify(packMcmeta, null, 2));
 
-      // 2. Strongholds / End Portals (Concentric Ring Algorithm)
-      const rng = createPRNG(currentSeed + 99999n);
-      const baseAngle = rng() * Math.PI * 2;
-      const count = 3; // First ring
-      const dist = 1400 + rng() * 600;
+      // 2. Export 16x16 totem canvas as binary PNG
+      const totemBlob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+      const totemArrayBuffer = await totemBlob.arrayBuffer();
 
-      for (let i = 0; i < count; i++) {
-        const angle = baseAngle + (i * (Math.PI * 2 / count)) + (rng() * 0.2 - 0.1);
-        const sx = Math.round(Math.cos(angle) * dist);
-        const sz = Math.round(Math.sin(angle) * dist);
-        strongholds.push({ type: 'End Portal / Stronghold', x: sx, z: sz, y: -20 - Math.floor(rng() * 20) });
-      }
+      // Assets location for Totem texture
+      zip.file("assets/minecraft/textures/item/totem_of_undying.png", totemArrayBuffer);
+
+      // 3. Generate pack.png icon for resource pack menu
+      zip.file("pack.png", totemArrayBuffer);
+
+      // 4. Build and download the zip file
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "CustomSkinTotem_Pack.zip");
+      setStatus("Resource pack downloaded! Move it into .minecraft/resourcepacks", "success");
     }
-
-    // Diamond Ore Generation
-    function generateDiamonds() {
-      diamonds = [];
-      const chunkStep = 3; // sample interval for fast visualization
-      const minChunkX = Math.floor((centerX - scanRadius) / 16);
-      const maxChunkX = Math.floor((centerX + scanRadius) / 16);
-      const minChunkZ = Math.floor((centerZ - scanRadius) / 16);
-      const maxChunkZ = Math.floor((centerZ + scanRadius) / 16);
-
-      for (let cx = minChunkX; cx <= maxChunkX; cx += chunkStep) {
-        for (let cz = minChunkZ; cz <= maxChunkZ; cz += chunkStep) {
-          const oreSeed = BigInt(cx * 498721 + cz * 7919) + currentSeed;
-          const rng = createPRNG(oreSeed);
-          if (rng() < 0.75) {
-            const dx = cx * 16 + Math.floor(rng() * 16);
-            const dz = cz * 16 + Math.floor(rng() * 16);
-            const dy = -16 - Math.floor(rng() * 42); // Y=-16 to Y=-58
-            const size = 1 + Math.floor(rng() * 8);
-            diamonds.push({ x: dx, y: dy, z: dz, size });
-          }
-        }
-      }
-    }
-
-    function switchTab(tab) {
-      currentTab = tab;
-      document.getElementById('tabStructures').classList.toggle('active', tab === 'structures');
-      document.getElementById('tabBlocks').classList.toggle('active', tab === 'blocks');
-      updateUI();
-      drawMap();
-    }
-
-    function updateUI() {
-      const filterPanel = document.getElementById('filterPanel');
-      const coordList = document.getElementById('coordList');
-
-      if (currentTab === 'structures') {
-        filterPanel.innerHTML = `
-          <div class="filter-item">
-            <label><input type="checkbox" id="chkVillage" ${showVillages ? 'checked' : ''} onchange="toggleFilter('villages')" /> Villages</label>
-            <span class="badge" style="background:#166534; color: #4ade80;">${villages.length}</span>
-          </div>
-          <div class="filter-item">
-            <label><input type="checkbox" id="chkPortal" ${showStrongholds ? 'checked' : ''} onchange="toggleFilter('strongholds')" /> End Portals</label>
-            <span class="badge" style="background:#581c87; color: #c084fc;">${strongholds.length}</span>
-          </div>
-        `;
-
-        let listHtml = '';
-        strongholds.forEach(s => {
-          listHtml += `
-            <div class="coord-item">
-              <div class="coord-details">
-                <span class="coord-title" style="color:var(--accent-portal);">${s.type}</span>
-                <span class="coord-sub">X: ${s.x} | Y: ${s.y} \vert{} Z:${s.z}</span>
-              </div>
-              <button class="btn-tp" onclick="copyTP(${s.x}, ${s.y},${s.z})">Copy /tp</button>
-            </div>
-          `;
-        });
-        villages.slice(0, 15).forEach(v => {
-          listHtml += `
-            <div class="coord-item">
-              <div class="coord-details">
-                <span class="coord-title" style="color:var(--accent-village);">${v.type}</span>
-                <span class="coord-sub">X: ${v.x} | Y: ${v.y} \vert{} Z:${v.z}</span>
-              </div>
-              <button class="btn-tp" onclick="copyTP(${v.x}, ${v.y},${v.z})">Copy /tp</button>
-            </div>
-          `;
-        });
-        coordList.innerHTML = listHtml;
-      } else {
-        filterPanel.innerHTML = `
-          <div class="filter-item">
-            <label><input type="checkbox" id="chkDiamond" ${showDiamonds ? 'checked' : ''} onchange="toggleFilter('diamonds')" /> Diamond Veins</label>
-            <span class="badge" style="background:#134e4a; color: #2ee6d6;">${diamonds.length} found</span>
-          </div>
-          <button class="btn-gen" style="width:100%; margin-top: 0.5rem; background: ${highlightAllDiamonds ? 'var(--highlight)' : '#0d9488'}; color: #000;" onclick="toggleHighlightDiamonds()">
-            ${highlightAllDiamonds ? '✨ Highlighting All Diamonds' : 'Highlight Every Diamond'}
-          </button>
-        `;
-
-        let listHtml = '';
-        diamonds.slice(0, 20).forEach(d => {
-          listHtml += `
-            <div class="coord-item">
-              <div class="coord-details">
-                <span class="coord-title" style="color:var(--accent-diamond);">Diamond Vein (${d.size} blocks)</span>
-                <span class="coord-sub">X: ${d.x} | Y: ${d.y} \vert{} Z:${d.z}</span>
-              </div>
-              <button class="btn-tp" onclick="copyTP(${d.x}, ${d.y},${d.z})">Copy /tp</button>
-            </div>
-          `;
-        });
-        coordList.innerHTML = listHtml;
-      }
-    }
-
-    function toggleFilter(type) {
-      if (type === 'villages') showVillages = document.getElementById('chkVillage').checked;
-      if (type === 'strongholds') showStrongholds = document.getElementById('chkPortal').checked;
-      if (type === 'diamonds') showDiamonds = document.getElementById('chkDiamond').checked;
-      drawMap();
-    }
-
-    function toggleHighlightDiamonds() {
-      highlightAllDiamonds = !highlightAllDiamonds;
-      updateUI();
-      drawMap();
-    }
-
-    function copyTP(x, y, z) {
-      navigator.clipboard.writeText(`/tp @s ${x} ${y}${z}`);
-      alert(`Copied: /tp @s ${x} ${y}${z}`);
-    }
-
-    // Map Drawing
-    function resizeCanvas() {
-      canvas.width = canvas.parentElement.clientWidth;
-      canvas.height = canvas.parentElement.clientHeight;
-      drawMap();
-    }
-    window.addEventListener('resize', resizeCanvas);
-
-    function drawMap() {
-      if (!canvas.width || !canvas.height) return;
-      ctx.fillStyle = '#0b0d14';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      const midX = canvas.width / 2 + panX;
-      const midZ = canvas.height / 2 + panZ;
-
-      // Coordinate Grid Lines
-      ctx.strokeStyle = '#1b2030';
-      ctx.lineWidth = 1;
-      const step = 500 * mapScale;
-      for (let x = midX % step; x < canvas.width; x += step) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-      }
-      for (let y = midZ % step; y < canvas.height; y += step) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-      }
-
-      // Center Origin Indicator
-      ctx.fillStyle = '#6b7280';
-      ctx.beginPath();
-      ctx.arc(midX, midZ, 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Draw Diamonds
-      if ((currentTab === 'blocks' && showDiamonds) || highlightAllDiamonds) {
-        diamonds.forEach(d => {
-          const cx = midX + (d.x - centerX) * mapScale;
-          const cz = midZ + (d.z - centerZ) * mapScale;
-          if (cx < -10 || cx > canvas.width + 10 || cz < -10 || cz > canvas.height + 10) return;
-
-          ctx.fillStyle = highlightAllDiamonds ? '#fef08a' : '#2ee6d6';
-          ctx.beginPath();
-          const r = highlightAllDiamonds ? 3.5 : 2;
-          ctx.arc(cx, cz, r, 0, Math.PI * 2);
-          ctx.fill();
-          if (highlightAllDiamonds) {
-            ctx.strokeStyle = '#f59e0b';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
-        });
-      }
-
-      // Draw Structures
-      if (currentTab === 'structures') {
-        if (showVillages) {
-          villages.forEach(v => {
-            const cx = midX + (v.x - centerX) * mapScale;
-            const cz = midZ + (v.z - centerZ) * mapScale;
-            ctx.fillStyle = '#4ade80';
-            ctx.beginPath();
-            ctx.arc(cx, cz, 5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#052e16';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-          });
-        }
-        if (showStrongholds) {
-          strongholds.forEach(s => {
-            const cx = midX + (s.x - centerX) * mapScale;
-            const cz = midZ + (s.z - centerZ) * mapScale;
-            ctx.fillStyle = '#c084fc';
-            ctx.beginPath();
-            ctx.arc(cx, cz, 7, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-          });
-        }
-      }
-    }
-
-    function zoomMap(factor) {
-      mapScale *= factor;
-      drawMap();
-    }
-    function resetMapView() {
-      panX = 0; panZ = 0;
-      mapScale = 400 / (scanRadius * 2);
-      drawMap();
-    }
-
-    // Pan interactions
-    let isDragging = false, startX = 0, startY = 0;
-    canvas.addEventListener('mousedown', e => { isDragging = true; startX = e.clientX - panX; startY = e.clientY - panZ; });
-    window.addEventListener('mouseup', () => isDragging = false);
-    canvas.addEventListener('mousemove', e => {
-      if (isDragging) {
-        panX = e.clientX - startX;
-        panZ = e.clientY - startY;
-        drawMap();
-      }
-    });
-
-    // Auto load on open
-    window.onload = () => {
-      resizeCanvas();
-      generateAll();
-    };
   </script>
 </body>
 </html>
