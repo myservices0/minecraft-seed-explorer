@@ -1,454 +1,113 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Minecraft Skin Totem Generator</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <style>
-    :root {
-      --bg-dark: #090b10;
-      --panel-bg: #121620;
-      --panel-border: #1e2638;
-      --accent-cyan: #00e5ff;
-      --accent-green: #00ff88;
-      --text-main: #f0f4f8;
-      --text-muted: #7e8b9b;
-      --input-bg: #0b0e14;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
-    }
-
-    body {
-      background-color: var(--bg-dark);
-      background-image: 
-        radial-gradient(circle at 15% 15%, rgba(0, 229, 255, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(0, 255, 136, 0.08) 0%, transparent 40%);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 30px 15px;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 950px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 25px;
-    }
-
-    header {
-      grid-column: 1 / -1;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-
-    header h1 {
-      font-size: 2.2rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    header p {
-      color: var(--text-muted);
-      margin-top: 6px;
-      font-size: 0.95rem;
-    }
-
-    .card {
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    }
-
-    .card-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--accent-cyan);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 18px;
-    }
-
-    .tabs {
-      display: flex;
-      background: var(--input-bg);
-      border-radius: 8px;
-      padding: 4px;
-      margin-bottom: 20px;
-      border: 1px solid var(--panel-border);
-    }
-
-    .tab-btn {
-      flex: 1;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 10px;
-      font-weight: 600;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .tab-btn.active {
-      background: var(--accent-cyan);
-      color: #000;
-      box-shadow: 0 2px 10px rgba(0, 229, 255, 0.3);
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-    }
-
-    input[type="text"], select {
-      width: 100%;
-      background: var(--input-bg);
-      border: 1px solid var(--panel-border);
-      border-radius: 8px;
-      padding: 12px 14px;
-      color: var(--text-main);
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input[type="text"]:focus, select:focus {
-      border-color: var(--accent-cyan);
-    }
-
-    .file-dropzone {
-      border: 2px dashed var(--panel-border);
-      border-radius: 8px;
-      padding: 25px;
-      text-align: center;
-      background: var(--input-bg);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .file-dropzone:hover {
-      border-color: var(--accent-cyan);
-      background: rgba(0, 229, 255, 0.03);
-    }
-
-    .file-dropzone input {
-      display: none;
-    }
-
-    .preview-panel {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .preview-wrapper {
-      width: 192px;
-      height: 192px;
-      background: repeating-conic-gradient(#151922 0% 25%, #0b0e14 0% 50%) 50% / 16px 16px;
-      border: 2px solid var(--panel-border);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 20px;
-      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
-    }
-
-    canvas {
-      image-rendering: pixelated;
-      width: 160px;
-      height: 160px;
-      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
-    }
-
-    .btn-download {
-      width: 100%;
-      background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
-      color: #000;
-      border: none;
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 1rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .btn-download:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
-    }
-
-    .status-msg {
-      margin-top: 12px;
-      font-size: 0.85rem;
-      text-align: center;
-      min-height: 20px;
-    }
-
-    .status-msg.error { color: #ff5555; }
-    .status-msg.success { color: var(--accent-green); }
-
-    @media (max-width: 768px) {
-      .container {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+<title>Tag Game</title>
+<style>
+body { margin:0; overflow:hidden; background:#222; }
+canvas { background:#5b9b4c; display:block; }
+#info {
+  position:fixed; top:10px; left:10px;
+  background:white; padding:10px;
+  font-family:Arial; border-radius:8px;
+}
+</style>
 </head>
+
 <body>
 
-  <header>
-    <h1>Minecraft Skin Totem Generator</h1>
-    <p>Convert your character skin into an outstretched Totem of Undying sprite.</p>
-  </header>
+<div id="info">
+  <b>TAG!</b><br>
+  You are: <span id="role">RUNNER</span><br>
+  Time: <span id="time">60</span>
+</div>
 
-  <div class="container">
-    <div class="card">
-      <div class="card-title">1. Choose Skin & Version</div>
+<canvas id="game"></canvas>
 
-      <div class="tabs">
-        <button class="tab-btn active" id="tab-username" onclick="switchTab('username')">Username</button>
-        <button class="tab-btn" id="tab-upload" onclick="switchTab('upload')">Upload PNG</button>
-      </div>
+<script>
+const c = document.getElementById("game");
+const ctx = c.getContext("2d");
 
-      <div id="section-username">
-        <div class="form-group">
-          <label>Minecraft Username</label>
-          <input type="text" id="username-input" placeholder="e.g. Notch, Jordan..." />
-        </div>
-        <button class="btn-download" style="background: var(--input-bg); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); margin-bottom: 16px;" onclick="fetchSkinByUsername()">
-          Load Skin
-        </button>
-      </div>
+c.width = innerWidth;
+c.height = innerHeight;
 
-      <div id="section-upload" style="display: none;">
-        <div class="form-group">
-          <label>Skin PNG File (64x64 or 64x32)</label>
-          <div class="file-dropzone" onclick="document.getElementById('file-input').click()">
-            <span id="file-label">Click or drop a skin .PNG file here</span>
-            <input type="file" id="file-input" accept="image/png" onchange="handleFileUpload(event)" />
-          </div>
-        </div>
-      </div>
+let time = 60;
+let keys = {};
+let it = Math.random() < .5 ? "player" : "bot";
 
-      <div class="form-group">
-        <label>Minecraft Game Version</label>
-        <select id="version-select">
-          <option value="46">1.21.4 / 26.1.2+ (Pack Format 46)</option>
-          <option value="42">1.21.2 - 1.21.3 (Pack Format 42)</option>
-          <option value="34">1.21.0 - 1.21.1 (Pack Format 34)</option>
-          <option value="32">1.20.5 - 1.20.6 (Pack Format 32)</option>
-          <option value="22">1.20.3 - 1.20.4 (Pack Format 22)</option>
-          <option value="15">1.20.0 - 1.20.2 (Pack Format 15)</option>
-          <option value="13">1.19.4 (Pack Format 13)</option>
-          <option value="9">1.19.0 - 1.19.3 (Pack Format 9)</option>
-          <option value="8">1.18.x (Pack Format 8)</option>
-          <option value="7">1.17.x (Pack Format 7)</option>
-          <option value="6">1.16.2 - 1.16.5 (Pack Format 6)</option>
-        </select>
-      </div>
-    </div>
+let player = {
+  x:200, y:200, r:15
+};
 
-    <div class="card preview-panel">
-      <div class="card-title">2. Totem Live Preview</div>
-      
-      <div class="preview-wrapper">
-        <canvas id="totemCanvas" width="16" height="16"></canvas>
-      </div>
+let bot = {
+  x:600, y:300, r:15
+};
 
-      <button id="btn-export" class="btn-download" onclick="generateResourcePack()">
-        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-        Download Resource Pack (.ZIP)
-      </button>
+document.onkeydown = e => keys[e.key.toLowerCase()] = true;
+document.onkeyup = e => keys[e.key.toLowerCase()] = false;
 
-      <div id="status" class="status-msg"></div>
-    </div>
-  </div>
+function move() {
+  if(keys.w || keys.arrowup) player.y -= 4;
+  if(keys.s || keys.arrowdown) player.y += 4;
+  if(keys.a || keys.arrowleft) player.x -= 4;
+  if(keys.d || keys.arrowright) player.x += 4;
 
-  <script>
-    const canvas = document.getElementById("totemCanvas");
-    const ctx = canvas.getContext("2d");
-    let currentSkinImg = null;
+  // Bot chases player when it is IT
+  if(it === "bot") {
+    if(bot.x < player.x) bot.x += 2;
+    if(bot.x > player.x) bot.x -= 2;
+    if(bot.y < player.y) bot.y += 2;
+    if(bot.y > player.y) bot.y -= 2;
+  } else {
+    // Bot runs away
+    if(bot.x < player.x) bot.x -= 2;
+    else bot.x += 2;
+  }
 
-    window.onload = () => {
-      document.getElementById("username-input").value = "Steve";
-      fetchSkinByUsername();
-    };
+  // Tag
+  let dx = player.x - bot.x;
+  let dy = player.y - bot.y;
+  let dist = Math.hypot(dx,dy);
 
-    function switchTab(mode) {
-      document.getElementById("tab-username").classList.toggle("active", mode === "username");
-      document.getElementById("tab-upload").classList.toggle("active", mode === "upload");
-      document.getElementById("section-username").style.display = mode === "username" ? "block" : "none";
-      document.getElementById("section-upload").style.display = mode === "upload" ? "block" : "none";
-    }
+  if(dist < 30) {
+    it = it === "player" ? "bot" : "player";
+  }
+}
 
-    function setStatus(msg, type = "success") {
-      const el = document.getElementById("status");
-      el.textContent = msg;
-      el.className = `status-msg ${type}`;
-    }
+function draw() {
+  ctx.clearRect(0,0,c.width,c.height);
 
-    function fetchSkinByUsername() {
-      const username = document.getElementById("username-input").value.trim();
-      if (!username) {
-        setStatus("Please enter a username.", "error");
-        return;
-      }
+  ctx.fillStyle = it === "player" ? "red" : "blue";
+  ctx.beginPath();
+  ctx.arc(player.x,player.y,player.r,0,Math.PI*2);
+  ctx.fill();
 
-      setStatus(`Fetching skin for ${username}...`, "success");
-      const img = new Image();
-      img.crossOrigin = "Anonymous";
-      img.src = `https://minotar.net/skin/${encodeURIComponent(username)}`;
+  ctx.fillStyle = it === "bot" ? "red" : "yellow";
+  ctx.beginPath();
+  ctx.arc(bot.x,bot.y,bot.r,0,Math.PI*2);
+  ctx.fill();
 
-      img.onload = () => {
-        currentSkinImg = img;
-        drawTotemFromSkin(img);
-        setStatus(`Skin loaded for ${username}!`, "success");
-      };
+  document.getElementById("role").textContent =
+    it === "player" ? "IT 🔴" : "RUNNER 🔵";
 
-      img.onerror = () => {
-        img.src = `https://mineskin.eu/skin/${encodeURIComponent(username)}`;
-        img.onerror = () => setStatus("Failed to load skin. Verify the username or upload a PNG.", "error");
-      };
-    }
+  document.getElementById("time").textContent = time;
+}
 
-    function handleFileUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+setInterval(() => {
+  if(time > 0) time--;
+  else {
+    alert(it === "player" ? "You lost!" : "You survived!");
+    location.reload();
+  }
+},1000);
 
-      document.getElementById("file-label").textContent = file.name;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          currentSkinImg = img;
-          drawTotemFromSkin(img);
-          setStatus("Custom skin PNG loaded successfully!", "success");
-        };
-        img.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
+function game() {
+  move();
+  draw();
+  requestAnimationFrame(game);
+}
 
-    // Outstretched Totem Arms using the player's exact skin textures
-    function drawTotemFromSkin(skin) {
-      ctx.clearRect(0, 0, 16, 16);
-      ctx.imageSmoothingEnabled = false;
+game();
+</script>
 
-      const skinCanvas = document.createElement("canvas");
-      skinCanvas.width = skin.width;
-      skinCanvas.height = skin.height;
-      const sCtx = skinCanvas.getContext("2d");
-      sCtx.drawImage(skin, 0, 0);
-
-      const is64x64 = skin.height >= 64;
-
-      function drawPart(sx, sy, sw, sh, dx, dy, dw, dh) {
-        ctx.drawImage(skinCanvas, sx, sy, sw, sh, dx, dy, dw, dh);
-      }
-
-      // 1. Outstretched Left Wing / Arm (Screen Left: x: 1..4, y: 6..11)
-      drawPart(44, 20, 4, 12, 1, 6, 4, 6);
-      if (is64x64) {
-        drawPart(44, 36, 4, 12, 1, 6, 4, 6); // Sleeve overlay
-      }
-
-      // 2. Outstretched Right Wing / Arm (Screen Right: x: 11..14, y: 6..11)
-      if (is64x64) {
-        drawPart(36, 52, 4, 12, 11, 6, 4, 6);
-        drawPart(52, 52, 4, 12, 11, 6, 4, 6); // Sleeve overlay
-      } else {
-        drawPart(44, 20, 4, 12, 11, 6, 4, 6);
-      }
-
-      // 3. Torso Base (sx: 20, sy: 20, 8x12 -> drawn at x=5, y=8, w=6, h=5)
-      drawPart(20, 20, 8, 12, 5, 8, 6, 5);
-      if (is64x64) {
-        drawPart(20, 36, 8, 12, 5, 8, 6, 5); // Jacket overlay
-      }
-
-      // 4. Right Leg (sx: 4, sy: 20) -> drawn at x=5, y=13, w=3, h=3
-      drawPart(4, 20, 4, 12, 5, 13, 3, 3);
-      if (is64x64) {
-        drawPart(4, 36, 4, 12, 5, 13, 3, 3); // Pants overlay
-      }
-
-      // 5. Left Leg -> drawn at x=8, y=13, w=3, h=3
-      if (is64x64) {
-        drawPart(20, 52, 4, 12, 8, 13, 3, 3);
-        drawPart(4, 52, 4, 12, 8, 13, 3, 3); // Pants overlay
-      } else {
-        drawPart(4, 20, 4, 12, 8, 13, 3, 3);
-      }
-
-      // 6. Head Base Layer (sx: 8, sy: 8, 8x8 -> drawn at x=4, y=0, w=8, h=8)
-      drawPart(8, 8, 8, 8, 4, 0, 8, 8);
-
-      // 7. Hat / Outer Head Layer (sx: 40, sy: 8, 8x8)
-      drawPart(40, 8, 8, 8, 4, 0, 8, 8);
-    }
-
-    async function generateResourcePack() {
-      if (!currentSkinImg) {
-        setStatus("Please load a skin first.", "error");
-        return;
-      }
-
-      setStatus("Generating custom totem resource pack...", "success");
-      const zip = new JSZip();
-      const packFormat = parseInt(document.getElementById("version-select").value);
-
-      const packMcmeta = {
-        pack: {
-          pack_format: packFormat,
-          description: "Custom Skin Totem of Undying"
-        }
-      };
-      zip.file("pack.mcmeta", JSON.stringify(packMcmeta, null, 2));
-
-      const totemBlob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-      const totemArrayBuffer = await totemBlob.arrayBuffer();
-
-      zip.file("assets/minecraft/textures/item/totem_of_undying.png", totemArrayBuffer);
-      zip.file("pack.png", totemArrayBuffer);
-
-      const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "CustomSkinTotem_Pack.zip");
-      setStatus("Resource pack downloaded! Move it into .minecraft/resourcepacks", "success");
-    }
-  </script>
 </body>
 </html>
